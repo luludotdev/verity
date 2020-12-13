@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,11 @@ var (
 				versionCmd.Run(cmd, args)
 				os.Exit(0)
 			}
+
+			if viper.GetString("token") == "" {
+				fmt.Fprintln(os.Stderr, "Missing Discord Token. Must be specified with --token or the `TOKEN` environment variable.")
+				os.Exit(1)
+			}
 		},
 	}
 )
@@ -29,4 +35,8 @@ func Execute() error {
 func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "print version")
 	viper.BindPFlag("version", rootCmd.Flags().Lookup("version"))
+
+	rootCmd.Flags().StringP("token", "T", "", "discord bot token")
+	viper.BindPFlag("token", rootCmd.Flags().Lookup("token"))
+	viper.BindEnv("token", "TOKEN")
 }
