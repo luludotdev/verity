@@ -6,6 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/lolPants/verity/bot/pkg/handler"
 )
 
 var (
@@ -21,6 +23,12 @@ var (
 
 			if viper.GetString("token") == "" {
 				fmt.Fprintln(os.Stderr, "Missing Discord Token. Must be specified with --token or the `TOKEN` environment variable.")
+				os.Exit(1)
+			}
+
+			err := handler.RunBot()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "Could not log in to Discord. Check your token is valid and try again.")
 				os.Exit(1)
 			}
 		},
