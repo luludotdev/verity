@@ -37,6 +37,6 @@ func RunBot() error {
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	user, _ := s.User("@me")
-	fmt.Printf("Logged in as %s\n", user)
+	fmt.Printf("Logged in as %s\n", s.State.User)
+	s.UpdateStatus(0, "v!help")
 }
