@@ -8,6 +8,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/viper"
+
+	"github.com/lolPants/verity/bot/pkg/commands"
 )
 
 // RunBot starts the Discord bot listener
@@ -19,6 +21,9 @@ func RunBot() error {
 	}
 
 	session.AddHandler(onReady)
+	router := commands.Router()
+	router.RegisterDefaultHelpCommand(session, nil)
+	router.Initialize(session)
 
 	fmt.Println("Logging in to Discord...")
 	err = session.Open()
