@@ -1,0 +1,59 @@
+name: Golang Build
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go: ['1.15']
+        goos: ['linux', 'windows']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Cache Go Modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go${{ matrix.go }}-${{ matrix.goos }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go${{ matrix.go }}-${{ matrix.goos }}
+      - name: Prepare Build
+        id: prepare
+        run: |
+          GO_PKG=`head -n 1 go.mod | awk '{print $2}'`
+          VERSION=`git rev-parse --short HEAD`
+          TAG=`git tag --points-at HEAD`
+
+          BUILD_FLAGS="-s -w -X ${GO_PKG}/bot/pkg/version.sha1ver=${VERSION} -X ${GO_PKG}/bot/pkg/version.gitTag=${TAG}"
+          BUILD_ARGS="-v -trimpath -ldflags=\"${BUILD_FLAGS}\""
+
+          echo ::set-output name=build_args::${BUILD_ARGS}
+          echo ::set-output name=tag::${TAG}
+
+          mkdir build
+      - name: Build
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: amd64
+        run: |
+          go build ${{ steps.prepare.outputs.build_args }} -o ./build/ ./bot
+          for file in ./build/* ; do mv "$file" "${file//bot/verity}" ; done
+      - name: Upload Binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: verity-go${{ matrix.go }}-${{ matrix.goos }}
+          path: ./build/*
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Verity ${{ steps.prepare.outputs.tag }}
+          files: ./build/*
